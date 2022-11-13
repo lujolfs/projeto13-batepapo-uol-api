@@ -12,7 +12,7 @@ const calendario = dayjs().format('HH:MM:ss')
 
 const mongoClient = new MongoClient("mongodb://localhost:27017");
 let db;
-
+let usuario
 
 
 mongoClient
@@ -37,12 +37,15 @@ app.get("/participants", (req, res) => {
 
 app.post("/participants", (req, res) => {
     const body = req.body.name
+    const headers = req.headers.user;
+    console.log(headers);
     db.collection("participants")
     .insertOne({
         "name": body, "lastStatus": Date.now()
     })
     .then(() => {
-        res.status(201).send("Usuário criado com sucesso.")
+        usuario = body;
+        res.status(201).send("Usuário criado com sucesso.");
         db.collection("messages").insertOne({
             'from': body, 
             'to': 'Todos',
@@ -55,7 +58,8 @@ app.post("/participants", (req, res) => {
     });
 });
 
-app.get("/messages", (req, res) => {
+app.get("/messages",
+    (req, res) => {
     db.collection("messages")
     .find()
     .toArray()
@@ -68,14 +72,18 @@ app.get("/messages", (req, res) => {
 });
 
 app.post("/messages", (req, res) => {
-    const body = req.body.name
-    db.collection("participants")
+    const body = req.body;
+    db.collection("messages")
     .insertOne({
-        "name": body, "lastStatus": Date.now()
+            'from': '',
+            'to': 'Todos',
+            'text': body.text,
+            'type': body.type,
+            'time': calendario
     })
     .then(() => {
-        res.status(201).send("Usuário criado com sucesso.")
-    })
+        res.sendStatus(201)
+        })
     .catch(err => {
         res.status(500).send(err);
     });
