@@ -3,6 +3,7 @@ import { MongoClient } from "mongodb";
 import cors from "cors";
 import dayjs from "dayjs";
 import joi from "joi";
+import dotenv from "dotenv";
 
 const userSchema = joi.object({
     name: joi.string().required().min(1)
@@ -16,11 +17,13 @@ const messageSchema = joi.object({
 
 const app = express();
 
+//configs
 app.use(cors());
 app.use(express.json());
+dotenv.config();
 
 const calendario = dayjs().format('HH:MM:ss')
-const mongoClient = new MongoClient("mongodb://localhost:27017");
+const mongoClient = new MongoClient(process.env.MONGO_URI);
 let db;
 
 try {
