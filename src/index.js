@@ -46,7 +46,7 @@ app.get("/participants", async (req, res) => {
 app.post("/participants", async (req, res) => {
     const body = req.body.name
     const participants = db.collection("participants")
-    const pname = {name: body}
+    const pname = { name: body }
     const validation = userSchema.validate(req.body, { abortEarly: false })
 
     if (validation.error) {
@@ -61,18 +61,19 @@ app.post("/participants", async (req, res) => {
         if (check) {
             res.sendStatus(409);
             return;
-        } else {        
-        await participants.insertOne({
-            "name": body, "lastStatus": Date.now()
-        });
-        res.sendStatus(201);
-        db.collection("messages").insertOne({
-            'from': body,
-            'to': 'Todos',
-            'text': 'entra na sala...',
-            'type': 'status',
-            'time': calendario
-        })};
+        } else {
+            await participants.insertOne({
+                "name": body, "lastStatus": Date.now()
+            });
+            res.sendStatus(201);
+            db.collection("messages").insertOne({
+                'from': body,
+                'to': 'Todos',
+                'text': 'entra na sala...',
+                'type': 'status',
+                'time': calendario
+            })
+        };
     } catch (err) {
         res.status(500).send(err);
     }
@@ -81,7 +82,7 @@ app.post("/participants", async (req, res) => {
 async function apagaInativos() {
     const participants = db.collection("participants");
     const date = Date.now()
-    const filtro = {lastStatus: {$lt: date - 10000}};
+    const filtro = { lastStatus: { $lt: date - 10000 } };
     try {
         const users = await participants.findOne(filtro);
         let user = users.name;
@@ -95,7 +96,8 @@ async function apagaInativos() {
         await participants.deleteOne(filtro);
     } catch (error) {
         return;
-    }}
+    }
+}
 
 setInterval(apagaInativos, 15000);
 
@@ -132,6 +134,8 @@ app.get("/messages", async (req, res) => {
 app.post("/messages", async (req, res) => {
     const body = req.body;
     const user = req.headers.user
+    const pname = { name: user }
+    const participants = db.collection("participants")
 
     const validation = messageSchema.validate(req.body, { abortEarly: false })
 
@@ -142,15 +146,21 @@ app.post("/messages", async (req, res) => {
     }
 
     try {
-        await db.collection("messages")
-            .insertOne({
-                'from': user,
-                'to': body.to,
-                'text': body.text,
-                'type': body.type,
-                'time': calendario
-            });
-        res.sendStatus(201)
+        const check = await participants.findOne(pname);
+        if (check) {
+            await db.collection("messages")
+                .insertOne({
+                    'from': user,
+                    'to': body.to,
+                    'text': body.text,
+                    'type': body.type,
+                    'time': calendario
+                });
+            res.sendStatus(201)
+        } else {
+            res.sendStatus(422);
+            return;
+        }
     } catch (err) {
         res.status(500).send(err);
     };
@@ -159,8 +169,8 @@ app.post("/messages", async (req, res) => {
 app.post("/status", async (req, res) => {
     const user = req.headers.user;
     const participants = db.collection("participants")
-    const filtro = {name: user};
-    const newStatus = {$set: {lastStatus: Date.now()}}
+    const filtro = { name: user };
+    const newStatus = { $set: { lastStatus: Date.now() } }
     try {
         const resultado = await participants.findOne(filtro);
         if (!resultado) {
@@ -169,7 +179,7 @@ app.post("/status", async (req, res) => {
         }
         await participants.updateOne(filtro, newStatus);
         res.sendStatus(200);
-        
+
     } catch (error) {
         res.sendStatus(404)
     }
