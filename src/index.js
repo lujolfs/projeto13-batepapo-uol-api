@@ -71,6 +71,27 @@ app.post("/participants", async (req, res) => {
     }
 })
 
+async function apagaInativos() {
+    const participants = db.collection("participants");
+    const date = Date.now()
+    const filtro = {lastStatus: {$lt: date - 10000}};
+    try {
+        const users = await participants.findOne(filtro);
+        let user = users.name;
+        db.collection("messages").insertOne({
+            'from': user,
+            'to': 'Todos',
+            'text': 'sai da sala...',
+            'type': 'status',
+            'time': calendario
+        });
+        await participants.deleteOne(filtro);
+    } catch (error) {
+        return;
+    }}
+
+setInterval(apagaInativos, 15000);
+
 app.get("/messages", async (req, res) => {
     const limit = parseInt(req.query.limit);
     const user = req.headers.user;
