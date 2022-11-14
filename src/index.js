@@ -4,14 +4,14 @@ import cors from "cors";
 import dayjs from "dayjs";
 import joi from "joi";
 
+const userSchema = joi.object({
+    name: joi.string().required().min(1)
+})
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 const calendario = dayjs().format('HH:MM:ss')
-const userSchema = joi.object({
-    name: joi.string().required(),
-})
 const mongoClient = new MongoClient("mongodb://localhost:27017");
 let db;
 
@@ -38,7 +38,15 @@ app.get("/participants", (req, res) => {
 
 app.post("/participants", (req, res) => {
     const body = req.body.name
-    const headers = req.headers.user;
+
+    const validation = userSchema.validate(req.body)
+
+    if (validation.error) {
+        const error = validation.error.details.map(detail => detail.message)
+        res.send(error);
+        return
+    }
+
     db.collection("participants")
     .insertOne({
         "name": body, "lastStatus": Date.now()
