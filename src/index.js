@@ -77,10 +77,11 @@ app.post("/participants", (req, res) => {
 app.get("/messages",
     (req, res) => {
         const limit = parseInt(req.query.limit);
-        const filter = { "to":  "Todos"}
+        const user = req.headers.user;
+        const filter = {$or: [{"to": user}, {"to": "Todos"}, {"type": "message"}]}
 
 
-        if (req.query.limit === (undefined || null)) {
+        if (!req.query.limit) {
             db.collection("messages")
                 .find()
                 .toArray()
@@ -92,7 +93,7 @@ app.get("/messages",
                 })
         } else {
             db.collection("messages")
-                .find()
+                .find(filter)
                 .toArray()
                 .then(msg => {
                     res.send(msg.slice(msg.length-limit));
