@@ -130,10 +130,18 @@ app.post("/messages", async (req, res) => {
 
 app.post("/status", async (req, res) => {
     const user = req.headers.user;
+    const participants = db.collection("participants")
+    const filtro = {name: user};
+    const newStatus = {$set: {lastStatus: Date.now()}}
     try {
-        await db.collection("participants")
-        .findOne({"name": user});
-    
+        const resultado = await participants.findOne(filtro);
+        if (!resultado) {
+            res.sendStatus(404);
+            return;
+        }
+        await participants.updateOne(filtro, newStatus);
+        res.sendStatus(200);
+        
     } catch (error) {
         res.sendStatus(404)
     }
