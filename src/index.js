@@ -29,7 +29,7 @@ app.get("/participants", (req, res) => {
     .toArray()
     .then((user) => {
         console.log(user);
-        res.send("ok");
+        res.send(user);
     }).catch(err => {
         console.log(err)
         res.sendStatus(500);
@@ -38,12 +38,14 @@ app.get("/participants", (req, res) => {
 
 app.post("/participants", (req, res) => {
     const body = req.body.name
+    const find = db.collection("participants").findOne({
+        name: body})
 
-    const validation = userSchema.validate(req.body)
+    const validation = userSchema.validate(req.body, { abortEarly: false })
 
     if (validation.error) {
         const error = validation.error.details.map(detail => detail.message)
-        res.send(error);
+        res.status(422).send(error);
         return
     }
 
@@ -52,7 +54,7 @@ app.post("/participants", (req, res) => {
         "name": body, "lastStatus": Date.now()
     })
     .then(() => {
-        res.status(201).send("Usuário criado com sucesso.");
+        res.sendStatus(201);
         db.collection("messages").insertOne({
             'from': body, 
             'to': 'Todos',
