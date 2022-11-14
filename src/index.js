@@ -8,6 +8,12 @@ const userSchema = joi.object({
     name: joi.string().required().min(1)
 })
 
+const messageSchema = joi.object({
+    to: joi.string().required().min(1),
+    text: joi.string().required().min(1),
+    type: joi.string().required().valid('message', 'private_message')
+})
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -83,6 +89,15 @@ app.get("/messages",
 app.post("/messages", (req, res) => {
     const body = req.body;
     const user = req.headers.user
+
+    const validation = messageSchema.validate(req.body, { abortEarly: false })
+
+    if (validation.error) {
+        const error = validation.error.details.map(detail => detail.message)
+        res.status(422).send(error);
+        return
+    }
+
     db.collection("messages")
     .insertOne({
             'from': user,
