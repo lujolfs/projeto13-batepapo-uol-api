@@ -78,7 +78,7 @@ app.get("/messages",
     (req, res) => {
         const limit = parseInt(req.query.limit);
         const user = req.headers.user;
-        const filter = {$or: [{"to": user}, {"to": "Todos"}, {"type": "message"}]}
+        const filter = {$or: [{"to": user}, {"to": "Todos"}, {"type": "message"}, {"from": user}]}
 
 
         if (!req.query.limit) {
