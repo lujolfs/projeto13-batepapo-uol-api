@@ -45,7 +45,8 @@ app.get("/participants", async (req, res) => {
 
 app.post("/participants", async (req, res) => {
     const body = req.body.name
-
+    const participants = db.collection("participants")
+    const pname = {name: body}
     const validation = userSchema.validate(req.body, { abortEarly: false })
 
     if (validation.error) {
@@ -54,8 +55,14 @@ app.post("/participants", async (req, res) => {
         return
     }
 
+
     try {
-        await db.collection("participants").insertOne({
+        const check = await participants.findOne(pname);
+        if (check) {
+            res.sendStatus(409);
+            return;
+        } else {        
+        await participants.insertOne({
             "name": body, "lastStatus": Date.now()
         });
         res.sendStatus(201);
@@ -65,7 +72,7 @@ app.post("/participants", async (req, res) => {
             'text': 'entra na sala...',
             'type': 'status',
             'time': calendario
-        });
+        })};
     } catch (err) {
         res.status(500).send(err);
     }
