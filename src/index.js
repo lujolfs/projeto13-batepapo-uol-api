@@ -26,21 +26,21 @@ let db;
 try {
     await mongoClient.connect();
     db = mongoClient.db("batePapoUol");
-} catch(err) {
+} catch (err) {
     console.log(err);
 }
 
 app.get("/participants", async (req, res) => {
     try {
-    const participants = await db
-        .collection("participants")
-        .find()
-        .toArray();
+        const participants = await db
+            .collection("participants")
+            .find()
+            .toArray();
         res.send(participants);
-    } catch(err) {
-            console.log(err)
-            res.sendStatus(500);
-        };
+    } catch (err) {
+        console.log(err)
+        res.sendStatus(500);
+    };
 });
 
 app.post("/participants", async (req, res) => {
@@ -55,49 +55,51 @@ app.post("/participants", async (req, res) => {
     }
 
     try {
-        await db.collection("participants").insertOne({"name": body, "lastStatus": Date.now()
+        await db.collection("participants").insertOne({
+            "name": body, "lastStatus": Date.now()
         });
         res.sendStatus(201);
         db.collection("messages").insertOne({
-                'from': body,
-                'to': 'Todos',
-                'text': 'entra na sala...',
-                'type': 'status',
-                'time': calendario
-            });
-        } catch(err) {
-            res.status(500).send(err);
-        }})
+            'from': body,
+            'to': 'Todos',
+            'text': 'entra na sala...',
+            'type': 'status',
+            'time': calendario
+        });
+    } catch (err) {
+        res.status(500).send(err);
+    }
+})
 
 app.get("/messages", async (req, res) => {
-        const limit = parseInt(req.query.limit);
-        const user = req.headers.user;
-        const filter = {$or: [{"to": user}, {"to": "Todos"}, {"type": "message"}, {"from": user}]}    
-    
-        if (!req.query.limit) {
-            try {
+    const limit = parseInt(req.query.limit);
+    const user = req.headers.user;
+    const filter = { $or: [{ "to": user }, { "to": "Todos" }, { "type": "message" }, { "from": user }] }
+
+    if (!req.query.limit) {
+        try {
             const msg = await db
                 .collection("messages")
                 .find()
                 .toArray();
-                res.send(msg);
-                } catch (err) {
-                    console.log(err)
-                    res.sendStatus(500);
-                }
-            } else {
-            try {
+            res.send(msg);
+        } catch (err) {
+            console.log(err)
+            res.sendStatus(500);
+        }
+    } else {
+        try {
             const msg = await db
                 .collection("messages")
                 .find(filter)
                 .toArray();
-                res.send(msg.slice(msg.length-limit));
-                } catch(err) {
-                    console.log(err)
-                    res.sendStatus(500);
-                }
-        };
-    });
+            res.send(msg.slice(msg.length - limit));
+        } catch (err) {
+            console.log(err)
+            res.sendStatus(500);
+        }
+    };
+});
 
 app.post("/messages", async (req, res) => {
     const body = req.body;
@@ -112,27 +114,30 @@ app.post("/messages", async (req, res) => {
     }
 
     try {
-    await db.collection("messages")
-        .insertOne({
-            'from': user,
-            'to': body.to,
-            'text': body.text,
-            'type': body.type,
-            'time': calendario
-        });
+        await db.collection("messages")
+            .insertOne({
+                'from': user,
+                'to': body.to,
+                'text': body.text,
+                'type': body.type,
+                'time': calendario
+            });
         res.sendStatus(201)
-        } catch(err) {
-            res.status(500).send(err);
-        };
+    } catch (err) {
+        res.status(500).send(err);
+    };
 });
 
-/* app.post("/status", (req, res) => {
+app.post("/status", async (req, res) => {
     const user = req.headers.user;
+    try {
+        await db.collection("participants")
+        .findOne({"name": user});
     
-    db.collection("participants")
-    .findOne({"name": user})
-    .then(() => )
- 
-}) */
+    } catch (error) {
+        res.sendStatus(404)
+    }
+
+})
 
 app.listen(5000);
