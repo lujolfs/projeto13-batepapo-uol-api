@@ -34,7 +34,6 @@ app.get("/participants", (req, res) => {
         .find()
         .toArray()
         .then((user) => {
-            console.log(user);
             res.send(user);
         }).catch(err => {
             console.log(err)
@@ -78,8 +77,10 @@ app.post("/participants", (req, res) => {
 app.get("/messages",
     (req, res) => {
         const limit = parseInt(req.query.limit);
+        const filter = { "to":  "Todos"}
 
-        if (!limit) {
+
+        if (req.query.limit === (undefined || null)) {
             db.collection("messages")
                 .find()
                 .toArray()
@@ -94,7 +95,7 @@ app.get("/messages",
                 .find()
                 .toArray()
                 .then(msg => {
-                    res.send(msg.slice(0, limit));
+                    res.send(msg.slice(msg.length-limit));
                 }).catch(err => {
                     console.log(err)
                     res.sendStatus(500);
