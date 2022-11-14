@@ -1,4 +1,4 @@
-import express, { response } from "express";
+import express from "express";
 import { MongoClient } from "mongodb";
 import cors from "cors";
 import dayjs from "dayjs";
@@ -15,37 +15,36 @@ const messageSchema = joi.object({
 })
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
+
 const calendario = dayjs().format('HH:MM:ss')
 const mongoClient = new MongoClient("mongodb://localhost:27017");
 let db;
 
+try {
+    await mongoClient.connect();
+    db = mongoClient.db("batePapoUol");
+} catch(err) {
+    console.log(err);
+}
 
-mongoClient
-    .connect()
-    .then(() => {
-        db = mongoClient.db("batePapoUol");
-    })
-    .catch((err) => console.log(err));
-
-app.get("/participants", (req, res) => {
-    db.collection("participants")
+app.get("/participants", async (req, res) => {
+    try {
+    const participants = await db
+        .collection("participants")
         .find()
-        .toArray()
-        .then((user) => {
-            res.send(user);
-        }).catch(err => {
+        .toArray();
+        res.send(participants);
+    } catch(err) {
             console.log(err)
             res.sendStatus(500);
-        });
+        };
 });
 
-app.post("/participants", (req, res) => {
+app.post("/participants", async (req, res) => {
     const body = req.body.name
-    const find = db.collection("participants").findOne({
-        name: body
-    })
 
     const validation = userSchema.validate(req.body, { abortEarly: false })
 
@@ -55,56 +54,52 @@ app.post("/participants", (req, res) => {
         return
     }
 
-    db.collection("participants")
-        .insertOne({
-            "name": body, "lastStatus": Date.now()
-        })
-        .then(() => {
-            res.sendStatus(201);
-            db.collection("messages").insertOne({
+    try {
+        await db.collection("participants").insertOne({"name": body, "lastStatus": Date.now()
+        });
+        res.sendStatus(201);
+        db.collection("messages").insertOne({
                 'from': body,
                 'to': 'Todos',
                 'text': 'entra na sala...',
                 'type': 'status',
                 'time': calendario
-            })
-        })
-        .catch(err => {
+            });
+        } catch(err) {
             res.status(500).send(err);
-        });
-});
+        }})
 
-app.get("/messages",
-    (req, res) => {
+app.get("/messages", async (req, res) => {
         const limit = parseInt(req.query.limit);
         const user = req.headers.user;
-        const filter = {$or: [{"to": user}, {"to": "Todos"}, {"type": "message"}, {"from": user}]}
-
-
+        const filter = {$or: [{"to": user}, {"to": "Todos"}, {"type": "message"}, {"from": user}]}    
+    
         if (!req.query.limit) {
-            db.collection("messages")
+            try {
+            const msg = await db
+                .collection("messages")
                 .find()
-                .toArray()
-                .then(msg => {
-                    res.send(msg);
-                }).catch(err => {
+                .toArray();
+                res.send(msg);
+                } catch (err) {
                     console.log(err)
                     res.sendStatus(500);
-                })
-        } else {
-            db.collection("messages")
+                }
+            } else {
+            try {
+            const msg = await db
+                .collection("messages")
                 .find(filter)
-                .toArray()
-                .then(msg => {
-                    res.send(msg.slice(msg.length-limit));
-                }).catch(err => {
+                .toArray();
+                res.send(msg.slice(msg.length-limit));
+                } catch(err) {
                     console.log(err)
                     res.sendStatus(500);
-                })
+                }
         };
     });
 
-app.post("/messages", (req, res) => {
+app.post("/messages", async (req, res) => {
     const body = req.body;
     const user = req.headers.user
 
@@ -116,20 +111,28 @@ app.post("/messages", (req, res) => {
         return
     }
 
-    db.collection("messages")
+    try {
+    await db.collection("messages")
         .insertOne({
             'from': user,
             'to': body.to,
             'text': body.text,
             'type': body.type,
             'time': calendario
-        })
-        .then(() => {
-            res.sendStatus(201)
-        })
-        .catch(err => {
-            res.status(500).send(err);
         });
+        res.sendStatus(201)
+        } catch(err) {
+            res.status(500).send(err);
+        };
 });
+
+/* app.post("/status", (req, res) => {
+    const user = req.headers.user;
+    
+    db.collection("participants")
+    .findOne({"name": user})
+    .then(() => )
+ 
+}) */
 
 app.listen(5000);
